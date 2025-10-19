@@ -29,7 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ---------- CORS CONFIGURATION ----------
 const allowedOrigins = [
-  "http://localhost:5173", // Vite local dev
+  "https://health-mate-app-by-muneeb.netlify.app", // Vite local dev
   "http://localhost:3000", // CRA local dev
   process.env.FRONTEND_URL, // Your Netlify frontend (e.g. https://healthmate.netlify.app)
 ].filter(Boolean);
