@@ -1,7 +1,6 @@
 // ---------- LOAD ENVIRONMENT VARIABLES FIRST ----------
-import "./config/env.js"; // <-- This ensures .env is loaded for all other files
 import dotenv from "dotenv";
-dotenv.config(); // ✅ must be first so all imports can access .env variables
+dotenv.config(); // ✅ Load .env before anything else
 
 // ---------- IMPORT DEPENDENCIES ----------
 import express from "express";
@@ -30,20 +29,20 @@ app.use(express.urlencoded({ extended: true }));
 
 // ---------- CORS CONFIGURATION ----------
 const allowedOrigins = [
-  "http://localhost:5173", // Vite default
-  "http://localhost:3000", // CRA default
-  process.env.FRONTEND_URL, // from .env (for production)
+  "http://localhost:5173", // Vite local dev
+  "http://localhost:3000", // CRA local dev
+  process.env.FRONTEND_URL, // Your Netlify frontend (e.g. https://healthmate.netlify.app)
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps or curl)
+      // Allow server-to-server and local requests with no origin
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       } else {
-        console.error(`❌ Blocked by CORS: ${origin}`);
+        console.warn(`⚠️ Blocked by CORS: ${origin}`);
         return callback(new Error("Not allowed by CORS"));
       }
     },
@@ -56,7 +55,10 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ---------- ROUTES ----------
 app.get("/", (req, res) => {
-  res.json({ message: "✅ HealthMate API is running" });
+  res.json({
+    message: "✅ HealthMate API is running",
+    frontend: process.env.FRONTEND_URL || "Not set",
+  });
 });
 
 app.use("/api/auth", authRoutes);
@@ -72,17 +74,21 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
-  console.error("❌ Missing MONGO_URI in .env file");
+  console.error("❌ Missing MONGO_URI in environment variables");
   process.exit(1);
 }
 
 // ---------- CONNECT TO MONGODB AND START SERVER ----------
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => {
     console.log("✅ Connected to MongoDB");
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    // IMPORTANT: Render requires "0.0.0.0" for binding
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
